@@ -1,0 +1,168 @@
+<html>
+<head>
+  <meta charset=utf-8 />
+  <title>Querying features</title>
+  <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+
+  <!-- Load Leaflet from CDN-->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/leaflet/1.0.0-rc.1/leaflet.css" />
+  <script src="https://cdn.jsdelivr.net/leaflet/1.0.0-rc.1/leaflet-src.js"></script>
+
+  <!-- Load Esri Leaflet from CDN -->
+  <script src="https://cdn.jsdelivr.net/leaflet.esri/2.0.0/esri-leaflet.js"></script>
+
+  <style>
+    *, body {
+      font-family: 'Lato', sans-serif;
+    }
+    label, select, option {
+      font-family: 'Lato', sans-serif;
+    }
+    body { margin:0; padding:0; }
+    #map { position: absolute; top:0; bottom:0; right:0; left:0; }
+
+    #query {
+      position: absolute;
+      top: 10px;
+      left: 60px;
+      z-index: 1000;
+    }
+    #query select {
+      font-size: 16px;
+    }
+    .leaflet-bar {
+      border-radius: 0;
+      background: whitesmoke;
+    }
+    .info, #query {
+      padding: 6px 8px;
+      font: 14px/16px 'Lato', sans-serif;
+      background: whitesmoke;
+      box-shadow: 0px 2.5px 5px 0px rgba(48,48,48,0.85);
+    }
+    .info {
+      max-width: 300px;
+    }
+    .info h3 {
+      font-weight: 700;
+      font-size: 1em;
+      margin: 0 0 5px;
+      color: #000;
+    }
+    .info .info-logo-container {
+      width: 100%;
+    }
+    .info .info-logo-container img {
+      margin-left: auto;
+      margin-right: auto;
+      display: block;
+    }
+    .info hr {
+      margin-top: 2px;
+      border-top-style: solid;
+      border-right-style: hidden;
+      border-left-style: hidden;
+      border-bottom-style
+      border-width: 1px;
+    }
+  </style>
+</head>
+<body>
+
+<style>
+  
+</style>
+
+<div id="map"></div>
+<div id="query" class="leaflet-bar">
+<label>
+  Award
+  <select id="award">
+    <!-- make sure to encase string values in single quotes for valid sql -->
+    <option value='1=1'>Any</option>
+    <option value="award_class_1=1">Partner of the Year - Sustained Excellence</option>
+    <option value="award_class_1=2">Partner of the Year</option>
+    <option value="award_class_1=3">Excellence Award - Product Design</option>
+  </select>
+</label>
+</div>
+
+<script>
+  var map = L.map('map').setView([38.365079, -84.852905], 9);
+  var info = L.control();
+    
+    info.onAdd = function (map) {
+      this._div = L.DomUtil.create('div','info');
+      this.update();
+      return this._div;
+    };
+
+    info.update = function (props) {
+      this._div.innerHTML = (props ?
+        '<h3>' + props.name + '</h3><br>' +
+        '<div class="info-logo-container"><img src="./img/' + props.FID + '.png" /></div><br>' +
+        '<b>Award:</b> ' + props.award1 + '<br>' +
+        '<b>Award Category:</b> ' + props.award2
+        : 'Click icon for more info'
+        )
+    }
+    info.addTo(map);
+
+    function clicky(e) {
+      var layer = e.target;
+      energyStar.setStyle({
+        color: '#fff'
+      })
+      layer.setStyle({
+        color: 'yellow'
+      })
+      info.update(layer.feature.properties);
+    }
+
+    function onEachFeature(feature, layer) {
+      layer.on({
+        click: clicky
+      })
+    }
+
+  function getColor(d) {
+    return d==1 ? '#27ae60':
+          d==2 ? '#8e44ad':
+          d==3 ? '#e67e22':
+          '#ecf0f1';
+  }
+
+  function style(feature){
+    return getColor(feature.properties.award_class_1)
+  }
+
+  L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
+    subdomains: 'abcd'
+  }).addTo(map);
+  
+  var energyStar = L.esri.featureLayer({
+    url: 'http://services1.arcgis.com/dpmGqj7FxlwlvK0y/arcgis/rest/services/energy_star_ky_2016/FeatureServer/0',
+    pointToLayer: function (geojson, latlng) {
+      return L.circleMarker(latlng,{
+        fillColor: style(geojson),
+        fillOpacity: 1,
+        color: '#fff',
+        weight: 4,
+        radius:10
+      }
+    )},
+    onEachFeature: onEachFeature
+  }).addTo(map);
+
+  var award = document.getElementById('award');
+
+  award.addEventListener('change', function(){
+    energyStar.setWhere(award.value);
+  });
+
+  
+</script>
+
+</body>
+</html>
